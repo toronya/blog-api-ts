@@ -1,6 +1,7 @@
 {
   "name": "20260228_blogapi",
   "version": "1.0.0",
+  "description": "A lightweight TypeScript blog API with full CRUD operations and search functionality, built with Hono and SQLite",
   "private": true,
   "type": "module",
   "scripts": {
