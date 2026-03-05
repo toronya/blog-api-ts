@@ -7,7 +7,7 @@ import { blogsRouter } from './routes/blogs.js';
 const app = new Hono();
 
 app.use('*', logger());
-app.use('*', cors({ origin: 'http://localhost:5173' }));
+app.use('*', cors({ origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173' }));
 
 app.get('/health', (c) => c.json({ ok: true }));
 app.route('/', blogsRouter);

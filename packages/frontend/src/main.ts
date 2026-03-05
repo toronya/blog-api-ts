@@ -2,6 +2,7 @@ import { api } from './api.js';
 import { renderBlogList } from './components/blog-list.js';
 import { mountBlogForm } from './components/blog-form.js';
 import { mountSearchBar } from './components/search-bar.js';
+import { escapeHtml } from './utils.js';
 
 const listEl = document.getElementById('blog-list')!;
 const detailEl = document.getElementById('blog-detail')!;
@@ -18,7 +19,10 @@ async function showList(query?: string): Promise<void> {
     const blogs = query ? await api.search(query) : await api.list();
     renderBlogList(listEl, blogs, showDetail);
   } catch (e) {
-    listEl.innerHTML = `<p>Error: ${(e as Error).message}</p>`;
+    listEl.innerHTML = '';
+    const p = document.createElement('p');
+    p.textContent = `Error: ${(e as Error).message}`;
+    listEl.appendChild(p);
   }
 }
 
@@ -49,17 +53,11 @@ async function showDetail(id: number): Promise<void> {
       showList();
     });
   } catch (e) {
-    detailEl.innerHTML = `<p>Error: ${(e as Error).message}</p>`;
+    detailEl.innerHTML = '';
+    const p = document.createElement('p');
+    p.textContent = `Error: ${(e as Error).message}`;
+    detailEl.appendChild(p);
   }
-}
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 // Mount search bar

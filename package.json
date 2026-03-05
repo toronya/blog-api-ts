@@ -11,6 +11,7 @@
     "build": "tsc -p tsconfig.json",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "dev:all": "pnpm dev & pnpm --filter @blog/bff dev & pnpm --filter @blog/frontend dev",
     "dev:bff": "pnpm --filter @blog/bff dev",
     "dev:front": "pnpm --filter @blog/frontend dev"
   },
