@@ -2,10 +2,11 @@
 
 🇬🇧 [English version](README.md)
 
-軽量なTypeScript ブログAPI。Honoと SQLiteで構築された、 CRUD操作と検索機能を完備しています。
+TypeScript製ブログAPIを含むpnpmモノレポ。API、BFF（Backend For Frontend）、バニラTypeScriptフロントエンドSPAの3パッケージで構成されています。HonoとSQLiteで構築されています。
 
 ## 機能
 
+### API
 - ✅ CRUD操作（Create、Read、Update、Delete）
 - 🔍 タイトルと本文の全文検索
 - 📝 TypeScriptによる型安全性
@@ -14,13 +15,46 @@
 - 🏗️ よく整理されたファイル構造
 - 🐳 DevContainer / GitHub Codespaces 対応
 
+### BFF（Backend For Frontend）
+- 🔀 フロントエンドとAPIの間のプロキシ層
+- ⚡ インメモリキャッシュ（一覧は30秒、詳細は60秒）
+- 🔄 データ変換（サマリー/詳細）
+- 🌐 CORSサポート
+
+### フロントエンド
+- 🖥️ バニラTypeScript SPA
+- ⚡ Viteによる高速な開発環境
+- 📝 ブログのCRUD UI
+- 🔍 検索機能
+
 ## 技術スタック
 
+### API
 - **フレームワーク**: Hono v4
 - **言語**: TypeScript v5
 - **データベース**: libSQL (SQLite) with Drizzle ORM
 - **ランタイム**: Node.js (v18+) via `@hono/node-server`
 - **パッケージマネージャー**: pnpm
+
+### BFF
+- **フレームワーク**: Hono v4
+- **言語**: TypeScript
+- **ランタイム**: Node.js via `@hono/node-server`
+
+### フロントエンド
+- **ビルドツール**: Vite v6
+- **言語**: バニラTypeScript
+- **スタイル**: CSS
+
+## アーキテクチャ
+
+```
+Frontend (port 5173) → BFF (port 3001) → API (port 3000) → SQLite
+```
+
+- **API** (`src/`): データベースへの直接アクセス、Drizzle ORMによるフルCRUD
+- **BFF** (`packages/bff/`): フロントエンドとAPIの仲介役。インメモリキャッシュ（TTL付き）、データ変換（rawコンテンツ → 一覧用抜粋、詳細用HTMLエスケープ）、CORSハンドリング、エラー正規化（上流障害時に502を返却）
+- **フロントエンド** (`packages/frontend/`): バニラTypeScript SPA。Vite devプロキシ（`/api` → `localhost:3001`）を使用。ブログ一覧/詳細/作成/検索を描画
 
 ## インストール
 
@@ -32,7 +66,7 @@
 ### ローカルセットアップ
 
 ```bash
-# 依存パッケージをインストール
+# すべての依存パッケージをインストール
 pnpm install
 
 # データベーススキーマを生成
@@ -41,7 +75,7 @@ pnpm db:generate
 # マイグレーションを実行
 pnpm db:migrate
 
-# 開発サーバーを起動
+# すべてのサービスを起動（API + BFF + フロントエンド）
 pnpm dev
 ```
 
@@ -62,8 +96,15 @@ pnpm dev
 ## 開発
 
 ```bash
-# 開発サーバーを起動（ホットリロード機能付き）
+# すべての依存パッケージをインストール
+pnpm install
+
+# すべてのサービスを起動（API + BFF + フロントエンド）
 pnpm dev
+
+# 個別に起動する場合：
+cd packages/bff && pnpm dev      # BFF（ポート3001）
+cd packages/frontend && pnpm dev # フロントエンド（ポート5173）
 
 # 開発サーバーを停止
 pnpm dev:stop
@@ -79,7 +120,10 @@ pnpm start
 
 | 変数名   | デフォルト | 説明 |
 |---------|-----------|------|
-| `PORT`  | `3000`    | HTTPサーバーがリッスンするポート番号 |
+| `PORT`  | `3000`    | APIサーバーのポート番号 |
+| `BFF_PORT` | `3001` | BFFサーバーのポート番号 |
+| `API_BASE` | `http://localhost:3000` | APIのベースURL（BFFで使用） |
+| `CORS_ORIGIN` | `http://localhost:5173` | 許可するCORSオリジン（BFFで使用） |
 
 ## API エンドポイント
 
@@ -276,25 +320,151 @@ curl -X PUT http://localhost:3000/blogs/1 \
 curl -X DELETE http://localhost:3000/blogs/1
 ```
 
+## BFF エンドポイント
+
+BFF（`packages/bff/`）はAPIと同じルートを公開しますが、レスポンスを変換して返します。
+
+### ヘルスチェック
+
+```
+GET /health
+```
+
+**レスポンス `200 OK`:**
+
+```json
+{ "ok": true }
+```
+
+### すべてのブログ記事を取得（サマリー）
+
+```
+GET /blogs
+```
+
+`BlogSummary[]` を最新順で返します。30秒間キャッシュされます。
+
+**レスポンス `200 OK`:**
+
+```json
+[
+  {
+    "id": 1,
+    "title": "Hello World",
+    "excerpt": "最初の投稿",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]
+```
+
+### ブログ記事を検索
+
+```
+GET /blogs/search?q=keyword
+```
+
+検索キーワードに一致する `BlogSummary[]` を返します。
+
+### IDでブログ記事を取得（詳細）
+
+```
+GET /blogs/:id
+```
+
+HTMLエスケープされたコンテンツを含む `BlogDetail` を返します。60秒間キャッシュされます。
+
+**レスポンス `200 OK`:**
+
+```json
+{
+  "id": 1,
+  "title": "Hello World",
+  "contentHtml": "最初の投稿",
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-01T00:00:00.000Z"
+}
+```
+
+### 作成 / 更新 / 削除
+
+```
+POST /blogs
+PUT /blogs/:id
+DELETE /blogs/:id
+```
+
+APIに直接プロキシし、成功時にキャッシュを無効化します。
+
+### エラーレスポンス
+
+- `502 Bad Gateway`: 上流のAPIに接続できない場合に返されます。
+
+### BFF レスポンス型
+
+```typescript
+interface BlogSummary {
+  id: number;
+  title: string;
+  excerpt: string;      // コンテンツの最初の120文字
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface BlogDetail {
+  id: number;
+  title: string;
+  contentHtml: string;  // HTMLエスケープされたコンテンツ
+  createdAt: string;
+  updatedAt: string;
+}
+```
+
 ## プロジェクト構造
 
 ```
-.devcontainer/            # DevContainer設定
-src/
-├── index.ts              # アプリケーションのエントリーポイント（@hono/node-server、PORT環境変数対応）
+.devcontainer/                  # DevContainer設定
+src/                            # Blog API（ポート3000）
+├── index.ts                    # APIエントリーポイント
 ├── db/
-│   ├── client.ts         # データベースクライアント設定（@libsql/client、drizzle-orm/libsql）
-│   ├── schema.ts         # データベーススキーマ定義
-│   └── init.ts           # データベース初期化
+│   ├── client.ts               # データベースクライアント設定
+│   ├── schema.ts               # データベーススキーマ定義
+│   └── init.ts                 # データベース初期化
 ├── routes/
-│   └── blogs.ts          # ブログルート定義
+│   └── blogs.ts                # ブログAPIルート
 └── utils/
-    └── parseId.ts        # ユーティリティ関数
+    └── parseId.ts              # ユーティリティ関数
+packages/
+├── bff/                        # BFF - Backend For Frontend（ポート3001）
+│   ├── src/
+│   │   ├── index.ts            # BFFエントリーポイント（Hono + CORS + ロガー）
+│   │   ├── routes/
+│   │   │   └── blogs.ts        # キャッシュ付きプロキシルート
+│   │   ├── cache/
+│   │   │   └── memory.ts       # TTL付きインメモリキャッシュ
+│   │   └── types/
+│   │       └── blog.ts         # BlogSummary/BlogDetail型とトランスフォーマー
+│   ├── package.json
+│   └── tsconfig.json
+└── frontend/                   # フロントエンドSPA（ポート5173）
+    ├── src/
+    │   ├── main.ts             # アプリエントリーポイント
+    │   ├── api.ts              # APIクライアント（fetchラッパー）
+    │   ├── style.css           # スタイル
+    │   ├── utils.ts            # HTMLエスケープユーティリティ
+    │   └── components/
+    │       ├── blog-list.ts    # ブログ一覧コンポーネント
+    │       ├── blog-form.ts    # ブログ作成フォームコンポーネント
+    │       └── search-bar.ts   # 検索バーコンポーネント
+    ├── index.html
+    ├── package.json
+    ├── tsconfig.json
+    └── vite.config.ts          # /apiプロキシを含むVite設定
 data/
-└── blog.db               # SQLiteデータベースファイル（自動生成）
-drizzle.config.ts         # Drizzle ORM設定
-tsconfig.json             # TypeScript設定
-pnpm-workspace.yaml       # pnpmワークスペース設定
+└── blog.db                     # SQLiteデータベースファイル（自動生成）
+drizzle.config.ts               # Drizzle ORM設定
+tsconfig.json                   # TypeScript設定
+pnpm-workspace.yaml             # pnpmワークスペース設定
 ```
 
 ## ライセンス
