@@ -1,5 +1,7 @@
 # Blog API
 
+🇬🇧 [English version](README.md)
+
 軽量なTypeScript ブログAPI。Honoと SQLiteで構築された、 CRUD操作と検索機能を完備しています。
 
 ## 機能
@@ -8,15 +10,16 @@
 - 🔍 タイトルと本文の全文検索
 - 📝 TypeScriptによる型安全性
 - ⚡ Honoによる軽量で高速な実装
-- 💾 Drizzle ORMを使用したSQLiteデータベース
+- 💾 libSQL (SQLite) と Drizzle ORM
 - 🏗️ よく整理されたファイル構造
+- 🐳 DevContainer / GitHub Codespaces 対応
 
 ## 技術スタック
 
-- **フレームワーク**: Hono
-- **言語**: TypeScript
-- **データベース**: SQLite（Drizzle ORM）
-- **サーバー**: Node.js
+- **フレームワーク**: Hono v4
+- **言語**: TypeScript v5
+- **データベース**: libSQL (SQLite) with Drizzle ORM
+- **ランタイム**: Node.js (v18+) via `@hono/node-server`
 - **パッケージマネージャー**: pnpm
 
 ## インストール
@@ -26,7 +29,7 @@
 - Node.js (v18+)
 - pnpm
 
-### セットアップ
+### ローカルセットアップ
 
 ```bash
 # 依存パッケージをインストール
@@ -39,6 +42,20 @@ pnpm db:generate
 pnpm db:migrate
 
 # 開発サーバーを起動
+pnpm dev
+```
+
+### GitHub Codespaces / DevContainer
+
+このリポジトリにはDevContainer設定が含まれています。ローカル環境のセットアップなしに、GitHub CodespacesやDevContainer対応エディタ（VS Code + Dev Containers拡張機能など）で直接開発を始めることができます。
+
+1. GitHubで **Code → Open with Codespaces** をクリックするか、VS Codeでリポジトリを開き **Reopen in Container** を選択します。
+2. コンテナが起動したら、依存パッケージをインストールしてサーバーを起動します：
+
+```bash
+pnpm install
+pnpm db:generate
+pnpm db:migrate
 pnpm dev
 ```
 
@@ -58,35 +75,79 @@ pnpm build
 pnpm start
 ```
 
+## 環境変数
+
+| 変数名   | デフォルト | 説明 |
+|---------|-----------|------|
+| `PORT`  | `3000`    | HTTPサーバーがリッスンするポート番号 |
+
 ## API エンドポイント
 
 ### ヘルスチェック
 
-```bash
+```
 GET /health
 ```
 
 APIのステータスを返します。
 
+**レスポンス `200 OK`:**
+
+```json
+{ "ok": true }
+```
+
 ### すべてのブログ記事を取得
 
-```bash
+```
 GET /blogs
 ```
 
 すべてのブログ記事を最新順で返します。
 
+**レスポンス `200 OK`:**
+
+```json
+[
+  {
+    "id": 1,
+    "title": "Hello World",
+    "content": "最初の投稿",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]
+```
+
 ### IDでブログ記事を取得
 
-```bash
+```
 GET /blogs/:id
 ```
 
 指定されたIDのブログ記事を1件返します。
 
+**レスポンス `200 OK`:**
+
+```json
+{
+  "id": 1,
+  "title": "Hello World",
+  "content": "最初の投稿",
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-01T00:00:00.000Z"
+}
+```
+
+**レスポンス `404 Not Found`:**
+
+```json
+{ "message": "not found" }
+```
+
 ### ブログ記事を検索
 
-```bash
+```
 GET /blogs/search?q=keyword
 ```
 
@@ -95,9 +156,17 @@ GET /blogs/search?q=keyword
 **クエリパラメータ:**
 - `q` (必須) - 検索キーワード
 
+**レスポンス `200 OK`:** 条件に一致するブログ記事の配列（「すべてのブログ記事を取得」と同じ形式）
+
+**レスポンス `400 Bad Request`:**
+
+```json
+{ "message": "query parameter \"q\" is required" }
+```
+
 ### ブログ記事を作成
 
-```bash
+```
 POST /blogs
 ```
 
@@ -112,9 +181,27 @@ POST /blogs
 }
 ```
 
+**レスポンス `201 Created`:**
+
+```json
+{
+  "id": 1,
+  "title": "ブログタイトル",
+  "content": "ブログの内容",
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-01T00:00:00.000Z"
+}
+```
+
+**レスポンス `400 Bad Request`:**
+
+```json
+{ "message": "title and content are required" }
+```
+
 ### ブログ記事を更新
 
-```bash
+```
 PUT /blogs/:id
 ```
 
@@ -129,13 +216,39 @@ PUT /blogs/:id
 }
 ```
 
+**レスポンス `200 OK`:**
+
+```json
+{
+  "id": 1,
+  "title": "更新されたタイトル",
+  "content": "更新された内容",
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-02T00:00:00.000Z"
+}
+```
+
+**レスポンス `404 Not Found`:**
+
+```json
+{ "message": "not found" }
+```
+
 ### ブログ記事を削除
 
-```bash
+```
 DELETE /blogs/:id
 ```
 
 ブログ記事を削除します。
+
+**レスポンス `204 No Content`:** 成功時はボディなし。
+
+**レスポンス `404 Not Found`:**
+
+```json
+{ "message": "not found" }
+```
 
 ## 使用例
 
@@ -166,16 +279,22 @@ curl -X DELETE http://localhost:3000/blogs/1
 ## プロジェクト構造
 
 ```
+.devcontainer/            # DevContainer設定
 src/
-├── index.ts              # アプリケーションのエントリーポイント
+├── index.ts              # アプリケーションのエントリーポイント（@hono/node-server、PORT環境変数対応）
 ├── db/
-│   ├── client.ts         # データベースクライアント設定
+│   ├── client.ts         # データベースクライアント設定（@libsql/client、drizzle-orm/libsql）
 │   ├── schema.ts         # データベーススキーマ定義
 │   └── init.ts           # データベース初期化
 ├── routes/
 │   └── blogs.ts          # ブログルート定義
 └── utils/
     └── parseId.ts        # ユーティリティ関数
+data/
+└── blog.db               # SQLiteデータベースファイル（自動生成）
+drizzle.config.ts         # Drizzle ORM設定
+tsconfig.json             # TypeScript設定
+pnpm-workspace.yaml       # pnpmワークスペース設定
 ```
 
 ## ライセンス
