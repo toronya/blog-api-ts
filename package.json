@@ -10,7 +10,10 @@
     "start": "node dist/index.js",
     "build": "tsc -p tsconfig.json",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "dev:all": "pnpm dev & pnpm --filter @blog/bff dev & pnpm --filter @blog/frontend dev",
+    "dev:bff": "pnpm --filter @blog/bff dev",
+    "dev:front": "pnpm --filter @blog/frontend dev"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.9",
