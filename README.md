@@ -2,10 +2,11 @@
 
 🇯🇵 [日本語版はこちら](README.ja.md)
 
-A lightweight TypeScript blog API with full CRUD operations and search functionality, built with Hono and SQLite.
+A pnpm monorepo containing three packages: a TypeScript Blog API, a BFF (Backend For Frontend) layer, and a Vanilla TypeScript Frontend SPA. Built with Hono and SQLite.
 
 ## Features
 
+### API
 - ✅ Full CRUD operations (Create, Read, Update, Delete)
 - 🔍 Full-text search on title and content
 - 📝 Type-safe with TypeScript
@@ -14,13 +15,46 @@ A lightweight TypeScript blog API with full CRUD operations and search functiona
 - 🏗️ Well-organized file structure
 - 🐳 DevContainer / GitHub Codespaces ready
 
+### BFF (Backend For Frontend)
+- 🔀 Proxy layer between frontend and API
+- ⚡ In-memory caching (30s for list, 60s for detail)
+- 🔄 Data transformation (summary/detail)
+- 🌐 CORS support
+
+### Frontend
+- 🖥️ Vanilla TypeScript SPA
+- ⚡ Vite-powered development
+- 📝 Blog CRUD UI
+- 🔍 Search functionality
+
 ## Tech Stack
 
+### API
 - **Framework**: Hono v4
 - **Language**: TypeScript v5
 - **Database**: libSQL (SQLite) with Drizzle ORM
 - **Runtime**: Node.js (v18+) via `@hono/node-server`
 - **Package Manager**: pnpm
+
+### BFF
+- **Framework**: Hono v4
+- **Language**: TypeScript
+- **Runtime**: Node.js via `@hono/node-server`
+
+### Frontend
+- **Build Tool**: Vite v6
+- **Language**: Vanilla TypeScript
+- **Styling**: CSS
+
+## Architecture
+
+```
+Frontend (port 5173) → BFF (port 3001) → API (port 3000) → SQLite
+```
+
+- **API** (`src/`): Direct database access, full CRUD with Drizzle ORM
+- **BFF** (`packages/bff/`): Proxy between frontend and API, provides caching (in-memory with TTL), data transformation (raw content → excerpt for list, HTML-escaped content for detail), CORS handling, error normalization (502 for upstream failures)
+- **Frontend** (`packages/frontend/`): Vanilla TypeScript SPA, uses Vite dev proxy (`/api` → `localhost:3001`), renders blog list/detail/create/search
 
 ## Installation
 
@@ -32,7 +66,7 @@ A lightweight TypeScript blog API with full CRUD operations and search functiona
 ### Local Setup
 
 ```bash
-# Install dependencies
+# Install all dependencies
 pnpm install
 
 # Generate database schema
@@ -41,7 +75,7 @@ pnpm db:generate
 # Run migrations
 pnpm db:migrate
 
-# Start development server
+# Start all services (API + BFF + Frontend)
 pnpm dev
 ```
 
@@ -62,8 +96,15 @@ pnpm dev
 ## Development
 
 ```bash
-# Start dev server (with hot reload)
+# Install all dependencies
+pnpm install
+
+# Start all services (API + BFF + Frontend)
 pnpm dev
+
+# Or start individually:
+cd packages/bff && pnpm dev      # BFF on port 3001
+cd packages/frontend && pnpm dev # Frontend on port 5173
 
 # Stop dev server
 pnpm dev:stop
@@ -79,7 +120,10 @@ pnpm start
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PORT`   | `3000`  | Port the HTTP server listens on |
+| `PORT`   | `3000`  | API server port |
+| `BFF_PORT` | `3001` | BFF server port |
+| `API_BASE` | `http://localhost:3000` | API base URL (used by BFF) |
+| `CORS_ORIGIN` | `http://localhost:5173` | Allowed CORS origin (used by BFF) |
 
 ## API Endpoints
 
@@ -276,25 +320,151 @@ curl -X PUT http://localhost:3000/blogs/1 \
 curl -X DELETE http://localhost:3000/blogs/1
 ```
 
+## BFF Endpoints
+
+The BFF (`packages/bff/`) exposes the same routes as the API but with transformed responses.
+
+### Health Check
+
+```
+GET /health
+```
+
+**Response `200 OK`:**
+
+```json
+{ "ok": true }
+```
+
+### Get All Blogs (Summary)
+
+```
+GET /blogs
+```
+
+Returns `BlogSummary[]` ordered by latest first. Cached for 30 seconds.
+
+**Response `200 OK`:**
+
+```json
+[
+  {
+    "id": 1,
+    "title": "Hello World",
+    "excerpt": "My first post",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]
+```
+
+### Search Blogs
+
+```
+GET /blogs/search?q=keyword
+```
+
+Returns `BlogSummary[]` matching the search keyword.
+
+### Get Blog by ID (Detail)
+
+```
+GET /blogs/:id
+```
+
+Returns a `BlogDetail` with HTML-escaped content. Cached for 60 seconds.
+
+**Response `200 OK`:**
+
+```json
+{
+  "id": 1,
+  "title": "Hello World",
+  "contentHtml": "My first post",
+  "createdAt": "2024-01-01T00:00:00.000Z",
+  "updatedAt": "2024-01-01T00:00:00.000Z"
+}
+```
+
+### Create / Update / Delete
+
+```
+POST /blogs
+PUT /blogs/:id
+DELETE /blogs/:id
+```
+
+Proxies directly to the API and invalidates the cache on success.
+
+### Error Responses
+
+- `502 Bad Gateway`: Returned when the upstream API is unreachable.
+
+### BFF Response Types
+
+```typescript
+interface BlogSummary {
+  id: number;
+  title: string;
+  excerpt: string;      // first 120 chars of content
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface BlogDetail {
+  id: number;
+  title: string;
+  contentHtml: string;  // HTML-escaped content
+  createdAt: string;
+  updatedAt: string;
+}
+```
+
 ## Project Structure
 
 ```
-.devcontainer/            # DevContainer configuration
-src/
-├── index.ts              # Application entry point (@hono/node-server, PORT env support)
+.devcontainer/                  # DevContainer configuration
+src/                            # Blog API (port 3000)
+├── index.ts                    # API entry point
 ├── db/
-│   ├── client.ts         # Database client setup (@libsql/client, drizzle-orm/libsql)
-│   ├── schema.ts         # Database schema definition
-│   └── init.ts           # Database initialization
+│   ├── client.ts               # Database client setup
+│   ├── schema.ts               # Database schema definition
+│   └── init.ts                 # Database initialization
 ├── routes/
-│   └── blogs.ts          # Blog routes definition
+│   └── blogs.ts                # Blog API routes
 └── utils/
-    └── parseId.ts        # Utility functions
+    └── parseId.ts              # Utility functions
+packages/
+├── bff/                        # BFF - Backend For Frontend (port 3001)
+│   ├── src/
+│   │   ├── index.ts            # BFF entry point (Hono + CORS + logger)
+│   │   ├── routes/
+│   │   │   └── blogs.ts        # Proxy routes with caching
+│   │   ├── cache/
+│   │   │   └── memory.ts       # In-memory cache with TTL
+│   │   └── types/
+│   │       └── blog.ts         # BlogSummary/BlogDetail types & transformers
+│   ├── package.json
+│   └── tsconfig.json
+└── frontend/                   # Frontend SPA (port 5173)
+    ├── src/
+    │   ├── main.ts             # App entry point
+    │   ├── api.ts              # API client (fetch wrapper)
+    │   ├── style.css           # Styles
+    │   ├── utils.ts            # HTML escape utility
+    │   └── components/
+    │       ├── blog-list.ts    # Blog list component
+    │       ├── blog-form.ts    # Blog create form component
+    │       └── search-bar.ts   # Search bar component
+    ├── index.html
+    ├── package.json
+    ├── tsconfig.json
+    └── vite.config.ts          # Vite config with /api proxy
 data/
-└── blog.db               # SQLite database file (auto-created)
-drizzle.config.ts         # Drizzle ORM configuration
-tsconfig.json             # TypeScript configuration
-pnpm-workspace.yaml       # pnpm workspace configuration
+└── blog.db                     # SQLite database file (auto-created)
+drizzle.config.ts               # Drizzle ORM configuration
+tsconfig.json                   # TypeScript configuration
+pnpm-workspace.yaml             # pnpm workspace configuration
 ```
 
 ## License
