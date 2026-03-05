@@ -32,3 +32,13 @@ export const cache = {
     }
   },
 };
+
+// Periodically purge expired entries every 60 seconds
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of store.entries()) {
+    if (now > entry.expiresAt) {
+      store.delete(key);
+    }
+  }
+}, 60_000).unref();

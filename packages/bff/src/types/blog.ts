@@ -26,7 +26,9 @@ export function toSummary(blog: Blog): BlogSummary {
   return {
     id: blog.id,
     title: blog.title,
-    excerpt: blog.content.slice(0, 120),
+    excerpt: blog.content.length > 120
+      ? blog.content.slice(0, 120) + '…'
+      : blog.content,
     createdAt: blog.createdAt,
     updatedAt: blog.updatedAt,
   };

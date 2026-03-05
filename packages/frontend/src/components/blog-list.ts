@@ -1,13 +1,5 @@
 import type { BlogSummary } from '../api.js';
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+import { escapeHtml } from '../utils.js';
 
 export function renderBlogList(
   container: HTMLElement,

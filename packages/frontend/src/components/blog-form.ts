@@ -1,6 +1,6 @@
 export function mountBlogForm(
   container: HTMLElement,
-  onSubmit: (title: string, content: string) => void,
+  onSubmit: (title: string, content: string) => void | Promise<void>,
 ): void {
   container.innerHTML = `
     <div class="blog-form">
@@ -22,7 +22,9 @@ export function mountBlogForm(
       alert('Title and content are required.');
       return;
     }
-    onSubmit(title, content);
+    Promise.resolve(onSubmit(title, content)).catch((e) => {
+      alert(`Error: ${(e as Error).message}`);
+    });
     titleInput.value = '';
     contentInput.value = '';
   });
