@@ -2,7 +2,7 @@
 
 🇬🇧 [English version](README.md)
 
-TypeScript製ブログAPIを含むpnpmモノレポ。API、BFF（Backend For Frontend）、バニラTypeScriptフロントエンドSPAの3パッケージで構成されています。HonoとSQLiteで構築されています。
+TypeScript製ブログAPIを含むpnpmモノレポ。API、BFF（Backend For Frontend）、PreactフロントエンドSPAの3パッケージで構成されています。HonoとSQLiteで構築されています。
 
 ## 機能
 
@@ -22,10 +22,13 @@ TypeScript製ブログAPIを含むpnpmモノレポ。API、BFF（Backend For Fro
 - 🌐 CORSサポート
 
 ### フロントエンド
-- 🖥️ バニラTypeScript SPA
+- ⚛️ Preact SPA（コンポーネントベース）
 - ⚡ Viteによる高速な開発環境
+- 🔀 preact-routerによるクライアントサイドルーティング
 - 📝 ブログのCRUD UI
-- 🔍 検索機能
+- 🔍 デバウンス付き検索機能
+- 🔔 トースト通知（alert()の代替）
+- 🌙 ダークモード対応
 
 ## 技術スタック
 
@@ -43,8 +46,10 @@ TypeScript製ブログAPIを含むpnpmモノレポ。API、BFF（Backend For Fro
 
 ### フロントエンド
 - **ビルドツール**: Vite v6
-- **言語**: バニラTypeScript
-- **スタイル**: CSS
+- **フレームワーク**: Preact v10
+- **ルーター**: preact-router v4
+- **言語**: TypeScript
+- **スタイル**: CSS（ダークモード対応）
 
 ## アーキテクチャ
 
@@ -54,7 +59,7 @@ Frontend (port 5173) → BFF (port 3001) → API (port 3000) → SQLite
 
 - **API** (`src/`): データベースへの直接アクセス、Drizzle ORMによるフルCRUD
 - **BFF** (`packages/bff/`): フロントエンドとAPIの仲介役。インメモリキャッシュ（TTL付き）、データ変換（rawコンテンツ → 一覧用抜粋、詳細用HTMLエスケープ）、CORSハンドリング、エラー正規化（上流障害時に502を返却）
-- **フロントエンド** (`packages/frontend/`): バニラTypeScript SPA。Vite devプロキシ（`/api` → `localhost:3001`）を使用。ブログ一覧/詳細/作成/検索を描画
+- **フロントエンド** (`packages/frontend/`): PreactベースのSPA。コンポーネント構成、Vite devプロキシ（`/api` → `localhost:3001`）を使用。クライアントサイドルーティング、ブログ一覧/詳細/作成/検索をトースト通知付きで描画
 
 ## インストール
 
@@ -448,18 +453,21 @@ packages/
 │   └── tsconfig.json
 └── frontend/                   # フロントエンドSPA（ポート5173）
     ├── src/
-    │   ├── main.ts             # アプリエントリーポイント
+    │   ├── main.tsx            # アプリエントリーポイント（renderのみ）
+    │   ├── app.tsx             # Appコンポーネント（ルーティング定義）
     │   ├── api.ts              # APIクライアント（fetchラッパー）
-    │   ├── style.css           # スタイル
-    │   ├── utils.ts            # HTMLエスケープユーティリティ
+    │   ├── style.css           # スタイル（ダークモード対応）
     │   └── components/
-    │       ├── blog-list.ts    # ブログ一覧コンポーネント
-    │       ├── blog-form.ts    # ブログ作成フォームコンポーネント
-    │       └── search-bar.ts   # 検索バーコンポーネント
+    │       ├── BlogCard.tsx    # ブログカード（一覧の各アイテム）
+    │       ├── BlogList.tsx    # ブログ一覧画面（一覧＋フォーム＋検索）
+    │       ├── BlogDetail.tsx  # ブログ詳細画面
+    │       ├── BlogForm.tsx    # ブログ作成フォームコンポーネント
+    │       ├── SearchBar.tsx   # デバウンス付き検索バー
+    │       └── Toast.tsx       # トースト通知コンポーネント
     ├── index.html
     ├── package.json
     ├── tsconfig.json
-    └── vite.config.ts          # /apiプロキシを含むVite設定
+    └── vite.config.ts          # Preactプラグインと/apiプロキシを含むVite設定
 data/
 └── blog.db                     # SQLiteデータベースファイル（自動生成）
 drizzle.config.ts               # Drizzle ORM設定

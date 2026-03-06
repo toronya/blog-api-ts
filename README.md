@@ -2,7 +2,7 @@
 
 🇯🇵 [日本語版はこちら](README.ja.md)
 
-A pnpm monorepo containing three packages: a TypeScript Blog API, a BFF (Backend For Frontend) layer, and a Vanilla TypeScript Frontend SPA. Built with Hono and SQLite.
+A pnpm monorepo containing three packages: a TypeScript Blog API, a BFF (Backend For Frontend) layer, and a Preact Frontend SPA. Built with Hono and SQLite.
 
 ## Features
 
@@ -22,10 +22,13 @@ A pnpm monorepo containing three packages: a TypeScript Blog API, a BFF (Backend
 - 🌐 CORS support
 
 ### Frontend
-- 🖥️ Vanilla TypeScript SPA
+- ⚛️ Preact SPA (component-based)
 - ⚡ Vite-powered development
+- 🔀 Client-side routing with preact-router
 - 📝 Blog CRUD UI
-- 🔍 Search functionality
+- 🔍 Search functionality with debounce
+- 🔔 Toast notifications (replaces alert())
+- 🌙 Dark mode support
 
 ## Tech Stack
 
@@ -43,8 +46,10 @@ A pnpm monorepo containing three packages: a TypeScript Blog API, a BFF (Backend
 
 ### Frontend
 - **Build Tool**: Vite v6
-- **Language**: Vanilla TypeScript
-- **Styling**: CSS
+- **Framework**: Preact v10
+- **Router**: preact-router v4
+- **Language**: TypeScript
+- **Styling**: CSS (with dark mode)
 
 ## Architecture
 
@@ -54,7 +59,7 @@ Frontend (port 5173) → BFF (port 3001) → API (port 3000) → SQLite
 
 - **API** (`src/`): Direct database access, full CRUD with Drizzle ORM
 - **BFF** (`packages/bff/`): Proxy between frontend and API, provides caching (in-memory with TTL), data transformation (raw content → excerpt for list, HTML-escaped content for detail), CORS handling, error normalization (502 for upstream failures)
-- **Frontend** (`packages/frontend/`): Vanilla TypeScript SPA, uses Vite dev proxy (`/api` → `localhost:3001`), renders blog list/detail/create/search
+- **Frontend** (`packages/frontend/`): Preact SPA with component-based architecture, uses Vite dev proxy (`/api` → `localhost:3001`), client-side routing, renders blog list/detail/create/search with toast notifications
 
 ## Installation
 
@@ -448,18 +453,21 @@ packages/
 │   └── tsconfig.json
 └── frontend/                   # Frontend SPA (port 5173)
     ├── src/
-    │   ├── main.ts             # App entry point
+    │   ├── main.tsx            # App entry point (render only)
+    │   ├── app.tsx             # App component (routing)
     │   ├── api.ts              # API client (fetch wrapper)
-    │   ├── style.css           # Styles
-    │   ├── utils.ts            # HTML escape utility
+    │   ├── style.css           # Styles (with dark mode)
     │   └── components/
-    │       ├── blog-list.ts    # Blog list component
-    │       ├── blog-form.ts    # Blog create form component
-    │       └── search-bar.ts   # Search bar component
+    │       ├── BlogCard.tsx    # Blog card (list item)
+    │       ├── BlogList.tsx    # Blog list page (list + form + search)
+    │       ├── BlogDetail.tsx  # Blog detail page
+    │       ├── BlogForm.tsx    # Blog create form component
+    │       ├── SearchBar.tsx   # Search bar with debounce
+    │       └── Toast.tsx       # Toast notification component
     ├── index.html
     ├── package.json
     ├── tsconfig.json
-    └── vite.config.ts          # Vite config with /api proxy
+    └── vite.config.ts          # Vite config with Preact plugin and /api proxy
 data/
 └── blog.db                     # SQLite database file (auto-created)
 drizzle.config.ts               # Drizzle ORM configuration
