@@ -91,6 +91,20 @@ export function BlogDetail({ id }: BlogDetailProps) {
             class="content"
             dangerouslySetInnerHTML={{ __html: blog.contentHtml }}
           />
+          {blog.images && blog.images.length > 0 && (
+            <div class="blog-detail-images">
+              {blog.images.map((img) => (
+                <figure key={img.id} class="blog-detail-image">
+                  <img
+                    src={`/api${img.url}`}
+                    alt={img.originalName}
+                    loading="lazy"
+                  />
+                  <figcaption>{img.originalName}</figcaption>
+                </figure>
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>

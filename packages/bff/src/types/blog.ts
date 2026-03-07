@@ -1,7 +1,18 @@
+export interface BlogImage {
+  id: number;
+  storageKey: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+  url: string;
+}
+
 export interface Blog {
   id: number;
   title: string;
   content: string;
+  images?: BlogImage[];
   createdAt: string;
   updatedAt: string;
 }
@@ -18,6 +29,7 @@ export interface BlogDetail {
   id: number;
   title: string;
   contentHtml: string;
+  images: BlogImage[];
   createdAt: string;
   updatedAt: string;
 }
@@ -48,6 +60,7 @@ export function toDetail(blog: Blog): BlogDetail {
     id: blog.id,
     title: blog.title,
     contentHtml: escapeHtml(blog.content).replace(/\n/g, '<br>'),
+    images: blog.images ?? [],
     createdAt: blog.createdAt,
     updatedAt: blog.updatedAt,
   };

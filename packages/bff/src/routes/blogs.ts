@@ -96,6 +96,7 @@ blogsRouter.delete('/blogs/:id', async (c) => {
     const id = c.req.param('id');
     const res = await fetch(`${API_BASE}/blogs/${id}`, { method: 'DELETE' });
     cache.invalidate('blogs:');
+    if (res.status === 204) return c.body(null, 204);
     const data = await res.json();
     return c.json(data, res.status as Parameters<typeof c.json>[1]);
   } catch {

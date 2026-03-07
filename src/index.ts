@@ -2,6 +2,7 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { initDatabase } from './db/init.js';
 import { blogsRouter } from './routes/blogs.js';
+import { imagesRouter } from './routes/images.js';
 
 const app = new Hono();
 
@@ -10,6 +11,7 @@ await initDatabase();
 
 // ルート登録
 app.route('/', blogsRouter);
+app.route('/', imagesRouter);
 
 const port = Number(process.env.PORT ?? 3000);
 
