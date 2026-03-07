@@ -98,6 +98,28 @@ pnpm db:migrate
 pnpm dev
 ```
 
+#### Using Podman
+
+The DevContainer configuration in this repository works with both Docker and Podman. No changes to repository files are needed.
+
+If you use Podman, add the following to your VS Code user settings (`settings.json`):
+
+```json
+{
+  "dev.containers.dockerPath": "podman"
+}
+```
+
+If you also use `docker-compose.yml`, add:
+
+```json
+{
+  "dev.containers.dockerComposePath": "podman-compose"
+}
+```
+
+> **Note**: These are per-developer local settings (e.g., `~/.config/Code/User/settings.json`), not repository settings. They do not affect developers using Docker.
+
 ## Development
 
 ```bash
