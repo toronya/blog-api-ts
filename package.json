@@ -13,7 +13,9 @@
     "db:migrate": "drizzle-kit migrate",
     "dev:all": "pnpm dev & pnpm --filter @blog/bff dev & pnpm --filter @blog/frontend dev",
     "dev:bff": "pnpm --filter @blog/bff dev",
-    "dev:front": "pnpm --filter @blog/frontend dev"
+    "dev:front": "pnpm --filter @blog/frontend dev",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.9",
@@ -25,6 +27,7 @@
     "@types/node": "^25.3.3",
     "drizzle-kit": "^0.31.9",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   }
 }
