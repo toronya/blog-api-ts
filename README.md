@@ -146,6 +146,32 @@ pnpm build
 pnpm start
 ```
 
+## Testing
+
+Tests are implemented using [Vitest](https://vitest.dev/). Tests run against an in-memory SQLite database, so they have no impact on the actual database file.
+
+```bash
+# Run tests once
+pnpm test
+
+# Run in watch mode (re-runs on file changes)
+pnpm test:watch
+```
+
+### Test Coverage
+
+`src/routes/blogs.test.ts` contains 21 tests covering all blog API endpoints:
+
+| Endpoint | What is tested |
+|---|---|
+| `GET /health` | Returns 200 OK |
+| `GET /blogs` | Empty array, multiple posts, DESC sort order |
+| `GET /blogs/search` | Required `q` validation, title search, content search, no results |
+| `GET /blogs/:id` | Invalid id (400), 404, successful fetch |
+| `POST /blogs` | Validation (400), 201 created, whitespace trimming |
+| `PUT /blogs/:id` | Invalid id, validation, 404, successful update |
+| `DELETE /blogs/:id` | Invalid id, 404, 204 deletion + GET returns 404 |
+
 ## Environment Variables
 
 | Variable | Default | Description |
