@@ -6,10 +6,21 @@ export interface BlogSummary {
   updatedAt: string;
 }
 
+export interface BlogImage {
+  id: number;
+  storageKey: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+  url: string;
+}
+
 export interface BlogDetail {
   id: number;
   title: string;
   contentHtml: string;
+  images: BlogImage[];
   createdAt: string;
   updatedAt: string;
 }
@@ -41,23 +52,32 @@ export const api = {
     return request<BlogSummary[]>(`/blogs/search?q=${encodeURIComponent(q)}`);
   },
 
-  create(title: string, content: string): Promise<BlogDetail> {
+  create(title: string, content: string, imageIds: number[] = []): Promise<BlogDetail> {
     return request<BlogDetail>('/blogs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, content }),
+      body: JSON.stringify({ title, content, imageIds }),
     });
   },
 
-  update(id: number, title: string, content: string): Promise<BlogDetail> {
+  update(id: number, title: string, content: string, imageIds?: number[]): Promise<BlogDetail> {
     return request<BlogDetail>(`/blogs/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, content }),
+      body: JSON.stringify({ title, content, ...(imageIds !== undefined ? { imageIds } : {}) }),
     });
   },
 
   delete(id: number): Promise<void> {
     return request<void>(`/blogs/${id}`, { method: 'DELETE' });
+  },
+
+  uploadImage(file: File): Promise<BlogImage & { url: string }> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return request<BlogImage & { url: string }>('/images', {
+      method: 'POST',
+      body: formData,
+    });
   },
 };
